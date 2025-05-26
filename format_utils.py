@@ -9,7 +9,7 @@ SYMPTOM_COLS = ['fever', 'cough', 'breathlessness', 'body_ache',
 def convert_row_to_text(row):
     try:
         # Safely get comorbidity with default value
-        comorbidity = str(row.get('comorbidity', '')).strip()
+        comorbidity = str(row.get('underlying_medical_condition', '')).strip()
         comorbidity_text = (f"with {comorbidity}" 
                            if comorbidity and comorbidity.lower() != "none" 
                            else "with no known comorbidities")
