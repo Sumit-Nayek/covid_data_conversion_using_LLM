@@ -7,11 +7,18 @@ SYMPTOM_COLS = ['fever', 'cough', 'breathlessness', 'body_ache',
        'cold']  # Add your columns here
 
 def convert_row_to_text(row):
-    age = f"A {row['age']}-year-old patient"
-    comorbidity = row['underlying_medical_condition']
-    comorbidity_text = f"with {comorbidity}" if comorbidity and comorbidity.lower() != "none" else "with no known comorbidities"
-    symptoms = [col.replace('_', ' ') for col in SYMPTOM_COLS if row.get(col) == 1]
-    symptom_text = f"presented with symptoms including {', '.join(symptoms)}" if symptoms else "presented with no significant symptoms"
-    gene_text = f"The RT-PCR test reported gene values as follows: E gene – {row['ct_value_screening']}, N gene – {row['ct_value_orf1b']}, and RdRp gene – {row['ct_value_rdrp']}."
-    diagnosis = f"The diagnosis was {row['final_test_result']}."
-    return f"{age} {comorbidity_text} {symptom_text}. {gene_text} {diagnosis}"
+    try:
+        # Safely get comorbidity with default value
+        comorbidity = str(row.get('comorbidity', '')).strip()
+        comorbidity_text = (f"with {comorbidity}" 
+                           if comorbidity and comorbidity.lower() != "none" 
+                           else "with no known comorbidities")
+        
+        # Add other fields similarly with proper error handling
+        # ...
+        
+        return f"Patient presents {comorbidity_text}."  # Your complete text here
+        
+    except Exception as e:
+        print(f"Error processing row: {e}")
+        return "Conversion error"  # or handle differently
