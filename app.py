@@ -123,7 +123,7 @@ if page == "🔄 Transform Data":
 elif page == "📊 Prepare for Fine-Tuning":
     st.subheader("Step 2: Fine-Tuning Analysis and Variable Prioritization")
 
-    st.markdown("&#128204; This section helps identify key features for LLM-based fine-tuning based on rule-based scores (0–10).", unsafe_allow_html=True)
+    st.markdown("This section helps identify key features for LLM-based fine-tuning based on rule-based scores (0–10).", unsafe_allow_html=True)
 
     def simple_variable_score(col):
         if df[col].nunique() == 2:
@@ -140,7 +140,7 @@ elif page == "📊 Prepare for Fine-Tuning":
     st.dataframe(score_df)
 
     top_features = score_df[score_df['LLM Score'] >= 7]['Feature'].tolist()
-    st.markdown("\ud83d\udd0d **Recommended features for fine-tuning:**")
+    st.markdown("**Recommended features for fine-tuning:**")
     st.markdown(", ".join(top_features) if top_features else "_No strong features identified._")
 
     st.download_button(
