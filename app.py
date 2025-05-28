@@ -123,7 +123,7 @@ if page == "🔄 Transform Data":
 elif page == "📊 Prepare for Fine-Tuning":
     st.subheader("Step 2: Fine-Tuning Analysis and Variable Prioritization")
 
-    st.markdown("\ud83d\udccc This section helps identify key features for LLM-based fine-tuning based on rule-based scores (0–10).")
+    st.markdown("&#128204; This section helps identify key features for LLM-based fine-tuning based on rule-based scores (0–10).", unsafe_allow_html=True)
 
     def simple_variable_score(col):
         if df[col].nunique() == 2:
