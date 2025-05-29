@@ -205,6 +205,7 @@ elif page == "📊 Prepare for Fine-Tuning":
     # Button for Visualizing Feature Scores
     st.markdown("**Feature Prioritization for Fine-Tuning:**")
     if st.button("Visualize Feature Scores"):
+            st.write("Under construction....")
         # fig, ax = plt.subplots(figsize=(10, 6))
         # ax.bar(score_df["Feature"], score_df["LLM Score"], color='skyblue')
         # ax.set_xlabel("Features")
@@ -220,16 +221,16 @@ elif page == "📊 Prepare for Fine-Tuning":
         # st.image(buf, caption="Feature Score Visualization", use_column_width=True)
         # plt.close(fig)
 
-    top_features = score_df[score_df['LLM Score'] >= 2]['Feature'].tolist()
-    st.markdown("**Recommended features for fine-tuning:**")
-    st.markdown(", ".join(top_features) if top_features else "_No strong features identified._")
+    # top_features = score_df[score_df['LLM Score'] >= 2]['Feature'].tolist()
+    # st.markdown("**Recommended features for fine-tuning:**")
+    # st.markdown(", ".join(top_features) if top_features else "_No strong features identified._")
 
-    st.download_button(
-        "📅 Download Feature Priority CSV",
-        data=score_df.to_csv(index=False).encode('utf-8'),
-        file_name='llm_variable_scores.csv',
-        mime='text/csv'
-    )
+    # st.download_button(
+    #     "📅 Download Feature Priority CSV",
+    #     data=score_df.to_csv(index=False).encode('utf-8'),
+    #     file_name='llm_variable_scores.csv',
+    #     mime='text/csv'
+    # )
 
     # Model Recommendation Logic
     def recommend_models(df, task_objective):
