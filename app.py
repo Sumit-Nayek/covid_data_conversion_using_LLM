@@ -95,7 +95,7 @@
 #     )
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from format_utils import convert_row_to_text
 import json
 import io
@@ -205,20 +205,20 @@ elif page == "📊 Prepare for Fine-Tuning":
     # Button for Visualizing Feature Scores
     st.markdown("**Feature Prioritization for Fine-Tuning:**")
     if st.button("Visualize Feature Scores"):
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.bar(score_df["Feature"], score_df["LLM Score"], color='skyblue')
-        ax.set_xlabel("Features")
-        ax.set_ylabel("LLM Score (0-10)")
-        ax.set_title("Feature Prioritization for LLM Fine-Tuning")
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
+        # fig, ax = plt.subplots(figsize=(10, 6))
+        # ax.bar(score_df["Feature"], score_df["LLM Score"], color='skyblue')
+        # ax.set_xlabel("Features")
+        # ax.set_ylabel("LLM Score (0-10)")
+        # ax.set_title("Feature Prioritization for LLM Fine-Tuning")
+        # plt.xticks(rotation=45, ha='right')
+        # plt.tight_layout()
 
-        # Save plot to a bytes buffer
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        st.image(buf, caption="Feature Score Visualization", use_column_width=True)
-        plt.close(fig)
+        # # Save plot to a bytes buffer
+        # buf = io.BytesIO()
+        # plt.savefig(buf, format='png')
+        # buf.seek(0)
+        # st.image(buf, caption="Feature Score Visualization", use_column_width=True)
+        # plt.close(fig)
 
     top_features = score_df[score_df['LLM Score'] >= 2]['Feature'].tolist()
     st.markdown("**Recommended features for fine-tuning:**")
