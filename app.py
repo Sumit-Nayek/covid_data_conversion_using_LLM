@@ -95,30 +95,41 @@
 #     )
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from format_utils import convert_row_to_text
 import json
+import io
+import uuid
+
 st.set_page_config(page_title="Medical Textifier", layout="wide")
 st.title("Medical Textifier 🏥🧠")
+
+# Initialize session state for storing DataFrame
+if 'df' not in st.session_state:
+    st.session_state.df = None
 
 # Sidebar navigation
 page = st.sidebar.selectbox("Navigate", ["🔄 Transform Data", "📊 Prepare for Fine-Tuning"])
 
 # File uploader
 uploaded_file = st.file_uploader("Upload your medical CSV file", type=["csv"])
-if not uploaded_file:
-    st.warning("Please upload a CSV file to continue.")
-    st.stop()
-
-try:
-    df = pd.read_csv(uploaded_file)
-    df.fillna('', inplace=True)
-except Exception as e:
-    st.error(f"Error loading CSV: {e}")
-    st.stop()
+if uploaded_file:
+    try:
+        st.session_state.df = pd.read_csv(uploaded_file)
+        st.session_state.df.fillna('', inplace=True)
+    except Exception as e:
+        st.error(f"Error loading CSV: {e}")
+        st.stop()
 
 # Page 1: Transform Data
 if page == "🔄 Transform Data":
     st.subheader("Step 1: Convert tabular data to structured clinical text")
+
+    if st.session_state.df is None:
+        st.warning("Please upload a CSV file to continue.")
+        st.stop()
+
+    df = st.session_state.df
 
     required_columns = ['underlying_medical_condition']
     missing_cols = [col for col in required_columns if col not in df.columns]
@@ -134,6 +145,9 @@ if page == "🔄 Transform Data":
         # Optional: Add a 'label' column if available (e.g., final_test_result or generated_result)
         if 'final_test_result' in df.columns:
             df['label'] = df['final_test_result']
+
+        # Update session state with transformed DataFrame
+        st.session_state.df = df
 
         # Let the user choose output format
         export_format = st.selectbox("Choose download format", ["CSV", "JSONL"])
@@ -160,13 +174,61 @@ if page == "🔄 Transform Data":
 elif page == "📊 Prepare for Fine-Tuning":
     st.subheader("Step 2: Fine-Tuning Analysis and Variable Prioritization")
 
+    if st.session_state.df is None:
+        st.warning("Please upload a CSV file in the Transform Data page to continue.")
+        st.stop()
+
+    df = st.session_state.df
+
     st.markdown("This section helps identify key features and recommend LLMs for fine-tuning based on your data and task objective.", unsafe_allow_html=True)
 
-    # Feature 1: Objective Selection (Dropdown)
+    # Objective Selection (Dropdown)
     task_objective = st.selectbox(
         "Select your task objective",
         ["Classification", "Text Generation"],
         help="Choose whether your goal is classification (e.g., predicting labels) or text generation (e.g., generating clinical notes)."
+    )
+
+    # Feature Scoring Logic
+    def simple_variable_score(col):
+        if df[col].nunique() == 2:
+            return 9
+        elif df[col].dtype == 'object':
+            return 7
+        elif df[col].dtype in ['int64', 'float64']:
+            return 5
+        return 3
+
+    scores = {col: simple_variable_score(col) for col in df.columns if col != 'text'}
+    score_df = pd.DataFrame(list(scores.items()), columns=["Feature", "LLM Score"]).sort_values(by="LLM Score", ascending=False)
+
+    # Button for Visualizing Feature Scores
+    st.markdown("**Feature Prioritization for Fine-Tuning:**")
+    if st.button("Visualize Feature Scores"):
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(score_df["Feature"], score_df["LLM Score"], color='skyblue')
+        ax.set_xlabel("Features")
+        ax.set_ylabel("LLM Score (0-10)")
+        ax.set_title("Feature Prioritization for LLM Fine-Tuning")
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+
+        # Save plot to a bytes buffer
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        st.image(buf, caption="Feature Score Visualization", use_column_width=True)
+        plt.close(fig)
+
+    top_features = score_df[score_df['LLM Score'] >= 2]['Feature'].tolist()
+    st.markdown("**Recommended features for fine-tuning:**")
+    st.markdown(", ".join(top_features) if top_features else "_No strong features identified._")
+
+    st.download_button(
+        "📅 Download Feature Priority CSV",
+        data=score_df.to_csv(index=False).encode('utf-8'),
+        file_name='llm_variable_scores.csv',
+        mime='text/csv'
     )
 
     # Model Recommendation Logic
@@ -200,39 +262,14 @@ elif page == "📊 Prepare for Fine-Tuning":
 
         return recommendations if recommendations else ["No specific model recommendations based on the data and task."]
 
-    # Existing Feature Scoring Logic
-    def simple_variable_score(col):
-        if df[col].nunique() == 2:
-            return 9
-        elif df[col].dtype == 'object':
-            return 7
-        elif df[col].dtype in ['int64', 'float64']:
-            return 5
-        return 3
-
-    scores = {col: simple_variable_score(col) for col in df.columns if col != 'text'}
-    score_df = pd.DataFrame(list(scores.items()), columns=["Feature", "LLM Score"]).sort_values(by="LLM Score", ascending=False)
-
-    st.markdown("**Feature Prioritization for Fine-Tuning:**")
-    st.dataframe(score_df)
-
-    top_features = score_df[score_df['LLM Score'] >= 7]['Feature'].tolist()
-    st.markdown("**Recommended features for fine-tuning:**")
-    st.markdown(", ".join(top_features) if top_features else "_No strong features identified._")
-
-    st.download_button(
-        "📅 Download Feature Priority CSV",
-        data=score_df.to_csv(index=False).encode('utf-8'),
-        file_name='llm_variable_scores.csv',
-        mime='text/csv'
-    )
-
-    # Feature 2: Button for Model Recommendations (Bottom Left)
-    st.markdown("<br><br>", unsafe_allow_html=True)  # Add some spacing
-    col1, col2 = st.columns([1, 3])  # Create two columns for layout control
+    # Button for Model Recommendations (Bottom Left)
+    st.markdown("<br><br>", unsafe_allow_html=True)  # Add spacing
+    col1, col2 = st.columns([1, 3])
     with col1:
         if st.button("Get LLM Recommendations"):
-            st.markdown("**Recommended LLMs for Fine-Tuning:**")
             recommended_models = recommend_models(df, task_objective)
-            for model in recommended_models:
-                st.markdown(f"- {model}")
+            # Center the recommendations in a single line
+            st.markdown(
+                "<div style='text-align: center;'><strong>Recommended LLMs for Fine-Tuning:</strong> " + ", ".join(recommended_models) + "</div>",
+                unsafe_allow_html=True
+            )
