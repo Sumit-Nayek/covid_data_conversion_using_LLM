@@ -231,37 +231,56 @@ elif page == "📊 Prepare for Fine-Tuning":
     #     file_name='llm_variable_scores.csv',
     #     mime='text/csv'
     # )
-
+import numpy as np
     # Model Recommendation Logic
     def recommend_models(df, task_objective):
-        dataset_size = len(df)
-        has_labels = 'label' in df.columns or 'final_test_result' in df.columns
-        avg_text_length = df['text'].apply(len).mean() if 'text' in df.columns else 0
-
-        recommendations = []
-        if task_objective == "Classification":
-            if not has_labels:
-                return ["Classification tasks require a 'label' or 'final_test_result' column in the dataset."]
-            if dataset_size < 1000:
-                recommendations.append("BERT (bert-base-uncased): Suitable for small datasets and binary/multiclass classification.")
-                recommendations.append("DistilBERT: Lightweight, faster to train for smaller datasets.")
-            elif dataset_size < 10000:
-                recommendations.append("RoBERTa: Robust for medium-sized datasets with improved performance over BERT.")
-                recommendations.append("ALBERT: Memory-efficient for classification tasks.")
+            dataset_size = len(df)
+            text_column = 'text' if 'text' in df.columns else None
+            avg_text_length = df[text_column].apply(lambda x: len(str(x).split())).mean() if text_column else 0
+            has_labels = any(label in df.columns for label in ['label', 'final_test_result'])
+        
+            recommendations = []
+        
+            if task_objective.lower() == "classification":
+                if not has_labels:
+                    return ["❌ Classification task requires a column named 'label' or 'final_test_result' with target classes."]
+        
+                # Estimate number of unique classes if possible
+                label_col = 'label' if 'label' in df.columns else 'final_test_result'
+                num_classes = df[label_col].nunique()
+        
+                # Model recommendations by dataset size
+                if dataset_size < 1000:
+                    recommendations.append("✅ **DistilBERT** - Lightweight, fast, ideal for small-scale binary or multiclass tasks.")
+                    if num_classes > 2:
+                        recommendations.append("⚠️ Consider **MiniLM** for efficient multiclass classification.")
+                elif dataset_size < 10000:
+                    recommendations.append("✅ **RoBERTa-base** - Strong performance for mid-sized classification tasks.")
+                    recommendations.append("✅ **ALBERT** - Memory-efficient and useful when hardware is limited.")
+                else:
+                    recommendations.append("✅ **DeBERTa-v3-base** - Excellent for large, high-performance classification.")
+                    if avg_text_length > 512:
+                        recommendations.append("✅ **Longformer** - Required for long sequences (input > 512 tokens).")
+        
+            elif task_objective.lower() == "generation":
+                if not text_column:
+                    return ["❌ Text generation requires a column named 'text' containing input text data."]
+        
+                if avg_text_length > 500:
+                    recommendations.append("✅ **T5 (t5-base or t5-large)** - Good for long text-to-text generation tasks.")
+                    recommendations.append("✅ **BART-large** - Strong in summarization and generation with longer inputs.")
+                else:
+                    recommendations.append("✅ **GPT-2 / GPT-Neo** - Suitable for short to medium-length text generation.")
+                    recommendations.append("✅ **T5 (t5-small)** - Lightweight text-to-text model for short generation tasks.")
+        
+                if dataset_size > 10000:
+                    recommendations.append("⚡ **LLaMA (via HF Transformers or API)** - High performance for large-scale generation tasks.")
+                    recommendations.append("⚡ **Mistral / Mixtral** - Modern open LLMs with better efficiency and accuracy.")
+        
             else:
-                recommendations.append("DeBERTa: High performance for large datasets and complex classification tasks.")
-                recommendations.append("Longformer: Suitable for long text sequences in classification.")
-        else:  # Text Generation
-            if avg_text_length > 500:
-                recommendations.append("T5 (t5-base): Effective for text generation with long sequences.")
-                recommendations.append("BART: Strong for tasks requiring text summarization or generation.")
-            else:
-                recommendations.append("GPT-2: Good for general text generation with smaller datasets.")
-                recommendations.append("T5 (t5-small): Efficient for short text generation tasks.")
-            if dataset_size > 10000:
-                recommendations.append("LLaMA (via API): High performance for large-scale text generation (requires API access).")
-
-        return recommendations if recommendations else ["No specific model recommendations based on the data and task."]
+                return ["❌ Unknown task objective. Please specify either 'Classification' or 'Generation'."]
+        
+            return recommendations if recommendations else ["⚠️ No model suggestions found. Please check your data and objective."]
 
     # Button for Model Recommendations (Bottom Left)
     st.markdown("<br><br>", unsafe_allow_html=True)  # Add spacing
