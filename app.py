@@ -284,12 +284,12 @@ import numpy as np
 
     # Button for Model Recommendations (Bottom Left)
     st.markdown("<br><br>", unsafe_allow_html=True)  # Add spacing
-    col1, col2 = st.columns([1, 3])
-    with col1:
-        if st.button("Get LLM Recommendations"):
-            recommended_models = recommend_models(df, task_objective)
+    # col1, col2 = st.columns([1, 3])
+    # with col1:
+    if st.button("Get LLM Recommendations"):
+        recommended_models = recommend_models(df, task_objective)
             # Center the recommendations in a single line
-            st.markdown(
+        st.markdown(
                 "<div style='text-align: center;'><strong>Recommended LLMs for Fine-Tuning:</strong> " + ", ".join(recommended_models) + "</div>",
                 unsafe_allow_html=True
             )
