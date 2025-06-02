@@ -95,6 +95,7 @@
 #     )
 import streamlit as st
 import pandas as pd
+import numpy as np
 # import matplotlib.pyplot as plt
 from format_utils import convert_row_to_text
 import json
@@ -231,9 +232,9 @@ elif page == "📊 Prepare for Fine-Tuning":
     #     file_name='llm_variable_scores.csv',
     #     mime='text/csv'
     # )
-import numpy as np
+
     # Model Recommendation Logic
-def recommend_models(df, task_objective):
+    def recommend_models(df, task_objective):
             dataset_size = len(df)
             text_column = 'text' if 'text' in df.columns else None
             avg_text_length = df[text_column].apply(lambda x: len(str(x).split())).mean() if text_column else 0
