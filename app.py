@@ -60,7 +60,7 @@ if page == "🔄 Transform Data":
         
         if export_format == "CSV":
             st.download_button(
-                "📥 Download LLM-Ready CSV",
+                "📥 Download Converted CSV",
                 data=df[['text', 'label']].to_csv(index=False).encode('utf-8') if 'label' in df.columns else df[['text']].to_csv(index=False).encode('utf-8'),
                 file_name='llm_ready_dataset.csv',
                 mime='text/csv'
@@ -70,7 +70,7 @@ if page == "🔄 Transform Data":
             records = df[['text', 'label']].to_dict(orient='records') if 'label' in df.columns else df[['text']].to_dict(orient='records')
             jsonl_data = "\n".join([json.dumps(record) for record in records])
             st.download_button(
-                "📥 Download LLM-Ready JSONL",
+                "📥 Download converted JSONL",
                 data=jsonl_data.encode('utf-8'),
                 file_name='llm_ready_dataset.jsonl',
                 mime='application/json'
