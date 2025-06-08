@@ -337,7 +337,7 @@ elif page == "📊 Prepare for Fine-Tuning":
 
     df = st.session_state.df
 
-    st.markdown("This section helps identify key features and recommend LLMs for fine-tuning based on your data and task objective.", unsafe_allow_html=True)
+    st.markdown("This section helps identify key features, recommend LLMs for fine-tuning, and detect outliers in your data.", unsafe_allow_html=True)
 
     # Objective Selection
     task_objective = st.selectbox(
@@ -363,6 +363,73 @@ elif page == "📊 Prepare for Fine-Tuning":
     st.markdown("**Feature Prioritization for Fine-Tuning:**")
     if st.button("Visualize Feature Scores"):
         st.write("Under construction....")
+
+    # Outlier Detection Logic
+    st.markdown("**Outlier Detection:**")
+    st.markdown("Identify potential data quality issues in numerical columns using Z-Score or IQR methods.")
+
+    # Select numerical columns
+    numerical_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+
+    if not numerical_cols:
+        st.warning("No numerical columns found in the dataset for outlier detection.")
+    else:
+        # Select outlier detection method
+        outlier_method = st.selectbox("Select outlier detection method", ["Z-Score", "IQR"])
+
+        def detect_outliers_zscore(series, threshold=3):
+            """Detect outliers using z-scores."""
+            z_scores = np.abs((series - series.mean()) / series.std())
+            return z_scores > threshold
+
+        def detect_outliers_iqr(series):
+            """Detect outliers using IQR method."""
+            Q1 = series.quantile(0.25)
+            Q3 = series.quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            return (series < lower_bound) | (series > upper_bound)
+
+        if st.button("Detect Outliers"):
+            outliers = []
+            for col in numerical_cols:
+                # Skip NaN values
+                series = df[col].dropna()
+                if series.empty:
+                    continue
+                
+                if outlier_method == "Z-Score":
+                    outlier_mask = detect_outliers_zscore(series)
+                    reason = f"Z-Score > 3 (Value too far from mean)"
+                else:  # IQR
+                    outlier_mask = detect_outliers_iqr(series)
+                    reason = f"Outside IQR bounds (Q1 - 1.5*IQR or Q3 + 1.5*IQR)"
+
+                # Get indices of outliers
+                outlier_indices = series[outlier_mask].index
+                for idx in outlier_indices:
+                    outliers.append({
+                        "Row Index": idx,
+                        "Column": col,
+                        "Value": df.at[idx, col],
+                        "Reason": reason
+                    })
+
+            if outliers:
+                outlier_df = pd.DataFrame(outliers)
+                st.success(f"Found {len(outliers)} potential outliers.")
+                st.dataframe(outlier_df)
+
+                # Download outlier report
+                st.download_button(
+                    "📥 Download Outlier Report",
+                    data=outlier_df.to_csv(index=False).encode('utf-8'),
+                    file_name='outlier_report.csv',
+                    mime='text/csv'
+                )
+            else:
+                st.info("No outliers detected in the numerical columns.")
 
     # Model Recommendation Logic
     def recommend_models(df, task_objective):
@@ -505,7 +572,7 @@ elif page == "📚 Glossary":
         <tr>
             <td><span class="tooltip">RoBERTa<span class="tooltiptext">An optimized version of BERT with better performance on classification tasks.</span></span></td>
             <td>An enhanced version of BERT, trained with more data and optimized for tasks like classification and question answering.</td>
-            <td>Using RoBERTa to classify patient notes into multiple disease categories.</td>
+            <td>Using RoBERTa to classify patient notes into multiple sclerosis categories.</td>
         </tr>
         <tr>
             <td><span class="tooltip">T5<span class="tooltiptext">A text-to-text model that handles tasks like generation and summarization.</span></span></td>
